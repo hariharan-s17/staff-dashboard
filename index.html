@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Station Master Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b0d;--bg-raised:#141416;--bg-card:#17171a;--line:#2a2a2e;--line-soft:#212124;--text:#f2f2f0;--text-dim:#9b9ba1;--text-faint:#67676d;--red:#e5484d;--red-dim:#3a1f20;--yellow:#f2b705;--yellow-dim:#3a3016;--green:#35b350;--green-dim:#16321d;--white:#f2f2f0;--track:repeating-linear-gradient(90deg,var(--line) 0 14px,transparent 14px 28px);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:inherit;margin:0;padding:0}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{min-height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+::selection{background:var(--yellow);color:#141416}
+.mono{font-family:'IBM Plex Mono',monospace}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:236px;flex-shrink:0;background:var(--bg-raised);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;z-index:30}
+.brand{padding:22px 20px 18px;border-bottom:1px solid var(--line)}
+.brand .mark{width:34px;height:34px;border-radius:4px;background:linear-gradient(135deg,var(--red) 0%,var(--red) 48%,var(--yellow) 52%,var(--yellow) 100%);display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono';font-weight:600;font-size:14px;color:#0b0b0d;margin-bottom:12px}
+.brand h1{font-size:15.5px;font-weight:600;line-height:1.3}
+.brand p{font-size:11.5px;color:var(--text-faint);margin-top:3px;font-family:'IBM Plex Mono'}
+nav{padding:14px 12px;flex:1}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:5px;color:var(--text-dim);font-size:13.5px;font-weight:500;cursor:pointer;border-left:2px solid transparent;user-select:none}
+.nav-item .dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex-shrink:0}
+.nav-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+.nav-item.active{background:rgba(229,72,77,.09);color:var(--white);border-left-color:var(--red)}
+.nav-item.active .dot{background:var(--red)}
+.nav-count{margin-left:auto;font-family:'IBM Plex Mono';font-size:10.5px;color:var(--text-faint);background:rgba(255,255,255,.05);padding:1px 6px;border-radius:3px}
+.sidebar-foot{padding:14px 20px 18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--text-faint)}
+.live{display:flex;align-items:center;gap:7px;margin-bottom:6px;color:var(--green);font-family:'IBM Plex Mono';font-size:11px}
+.blip{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(53,179,80,.18);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.scrim{display:none}
+.main{flex:1;min-width:0}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(11,11,13,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:14px 30px;display:flex;align-items:center;gap:14px}
+.tb-title{flex:1;min-width:0}
+.topbar h2{font-size:18px;font-weight:600}
+.topbar .sub{font-size:12px;color:var(--text-faint);font-family:'IBM Plex Mono';margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.menu-btn{display:none;background:none;border:1px solid var(--line);color:var(--text);width:38px;height:38px;border-radius:5px;font-size:18px;cursor:pointer;flex-shrink:0}
+.section-select{background:var(--bg-card);border:1px solid var(--line);color:var(--text);font-family:'IBM Plex Mono';font-size:12px;padding:8px 10px;border-radius:5px;min-width:190px}
+.badge-user{display:flex;align-items:center;gap:9px;padding:6px 12px 6px 6px;border:1px solid var(--line);border-radius:20px;font-size:12.5px;white-space:nowrap}
+.av{width:24px;height:24px;border-radius:50%;background:var(--yellow);color:#141416;font-family:'IBM Plex Mono';font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center}
+.content{padding:26px 30px 60px;max-width:1400px}
+.view{display:none}
+.view.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0}}
+h3.block-title{font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px}
+.grid{display:grid;gap:16px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-2{grid-template-columns:1.4fr 1fr}
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:7px;padding:18px}
+.stat-card{position:relative;overflow:hidden;padding:14px 16px}
+.stat-card .top-line{position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card .label{font-size:11.5px;color:var(--text-faint);font-family:'IBM Plex Mono'}
+.stat-card .value{font-size:24px;font-weight:600;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat-card .delta{font-size:11.5px;margin-top:4px;color:var(--text-dim)}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono';font-size:11px;font-weight:600;padding:3px 9px;border-radius:3px;letter-spacing:.3px;white-space:nowrap}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.badge-green{background:var(--green-dim);color:var(--green)}.badge-green::before{background:var(--green)}
+.badge-red{background:var(--red-dim);color:var(--red)}.badge-red::before{background:var(--red)}
+.badge-yellow{background:var(--yellow-dim);color:var(--yellow)}.badge-yellow::before{background:var(--yellow)}
+.badge-neutral{background:rgba(255,255,255,.06);color:var(--text-dim)}.badge-neutral::before{background:var(--text-faint)}
+.tw{padding:0;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:680px}
+thead th{text-align:left;font-family:'IBM Plex Mono';font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-faint);font-weight:500;padding:14px 12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:13px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody tr.selected{background:rgba(229,72,77,.07)}
+tbody.ro tr{cursor:default}
+.id-cell{font-family:'IBM Plex Mono';color:var(--text-dim);white-space:nowrap}
+.empty{color:var(--text-faint);text-align:center;padding:34px 10px;font-size:13px}
+.btn{font-family:'IBM Plex Sans';font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:5px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.04)}
+.btn-primary{background:var(--red);border-color:var(--red);color:#fff}
+.btn-primary:hover{background:#d33a3f}
+.btn-ghost{color:var(--text-dim)}
+.btn-sm{padding:6px 11px;font-size:12px}
+.filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.filters select,.filters input{background:var(--bg-card);border:1px solid var(--line);color:var(--text);padding:8px 11px;border-radius:5px;font-size:12.5px;font-family:'IBM Plex Sans'}
+.filters input{min-width:240px}
+.route-line{display:flex;align-items:center;margin:18px 0 6px}
+.route-node{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:120px}
+.route-node .pin{width:14px;height:14px;border-radius:50%;border:2px solid var(--white);background:var(--bg-card);margin-bottom:8px}
+.route-node.origin .pin{border-color:var(--green);background:var(--green)}
+.route-node.dest .pin{border-color:var(--red);background:var(--red)}
+.route-node .name{font-size:13px;font-weight:600;text-align:center}
+.route-node .kind{font-size:10.5px;color:var(--text-faint);font-family:'IBM Plex Mono';margin-top:2px;text-align:center}
+.route-track{flex:1;height:2px;background:var(--track);position:relative;margin:0 -2px;top:-14px}
+.marker{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--yellow);color:#141416;font-family:'IBM Plex Mono';font-weight:700;font-size:10.5px;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.kv-row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13px}
+.kv-row:last-child{border-bottom:none}
+.kv-row .k{color:var(--text-faint);font-family:'IBM Plex Mono';font-size:11.5px;flex-shrink:0}
+.kv-row .v{font-weight:500;text-align:right}
+.ai-card{background:var(--bg-card);border:1px solid var(--line);border-left:3px solid var(--text-faint);border-radius:7px;padding:16px 18px;display:flex;gap:16px;align-items:flex-start;margin-bottom:12px}
+.priority-critical{border-left-color:var(--red)}.priority-high{border-left-color:var(--yellow)}.priority-medium{border-left-color:var(--green)}
+.ai-icon{width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.ai-body{flex:1;min-width:0}
+.ai-head{display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap}
+.ai-head strong{font-size:14px;font-weight:600}
+p.desc{font-size:12.5px;color:var(--text-dim);line-height:1.55;margin:6px 0 10px;max-width:620px}
+.ai-meta{display:flex;gap:6px 16px;flex-wrap:wrap}
+.ai-meta span{font-size:11.5px;color:var(--text-faint);font-family:'IBM Plex Mono'}
+.ai-meta b{color:var(--text-dim);font-weight:500}
+.ai-actions{flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.mini{background:var(--bg-raised);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:5px;font-size:12.5px;font-family:'IBM Plex Sans'}
+textarea.mini{width:100%;resize:vertical;font-family:inherit}
+.req-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+.detail-panel{position:sticky;top:calc(86px + env(safe-area-inset-top,0px))}
+.detail-empty{color:var(--text-faint);font-size:13px;text-align:center;padding:40px 10px}
+.detail-empty .icn{font-size:26px;display:block;margin-bottom:10px}
+.approval-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.approval-box{border:1px solid var(--line);border-radius:6px;padding:14px;text-align:center}
+.who{font-size:11px;color:var(--text-faint);font-family:'IBM Plex Mono';margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.comm-shell{display:grid;grid-template-columns:280px 1fr;border:1px solid var(--line);border-radius:8px;overflow:hidden;height:560px}
+.worker-list{background:var(--bg-card);border-right:1px solid var(--line);overflow-y:auto;min-height:0}
+.worker-search{padding:12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg-card)}
+.worker-search input{width:100%;background:var(--bg-raised);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:5px;font-size:12.5px}
+.worker-item{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line-soft);border-left:2px solid transparent}
+.worker-item:hover{background:rgba(255,255,255,.03)}
+.worker-item.active{background:rgba(229,72,77,.09);border-left-color:var(--red)}
+.wav{width:32px;height:32px;border-radius:50%;background:var(--bg-raised);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono';font-size:12px;flex-shrink:0;position:relative}
+.stat-dot{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg-card)}
+.wname{font-size:13px;font-weight:500}
+.wrole{font-size:11px;color:var(--text-faint)}
+.chat-col{display:flex;flex-direction:column;background:var(--bg);min-height:0;min-width:0}
+.chat-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.chat-head .name{font-size:14px;font-weight:600}
+.chat-head .role{font-size:11.5px;color:var(--text-faint);font-family:'IBM Plex Mono'}
+.chat-body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:62%;padding:9px 13px;border-radius:9px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.msg .t{font-size:10px;margin-top:5px;font-family:'IBM Plex Mono';color:var(--text-faint)}
+.msg.in{align-self:flex-start;background:var(--bg-card);border:1px solid var(--line);border-bottom-left-radius:2px}
+.msg.out{align-self:flex-end;background:var(--red);color:#fff;border-bottom-right-radius:2px}
+.msg.out .t{color:rgba(255,255,255,.7)}
+.chat-input{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:10px}
+.chat-input input{flex:1;min-width:0;background:var(--bg-card);border:1px solid var(--line);color:var(--text);padding:11px 14px;border-radius:20px;font-size:13px}
+.chat-input button{width:40px;height:40px;border-radius:50%;background:var(--red);border:none;color:#fff;cursor:pointer;font-size:15px;flex-shrink:0}
+@media(max-width:1100px){
+ .grid-4{grid-template-columns:repeat(2,1fr)}
+ .grid-2,.req-grid{grid-template-columns:1fr}
+ .detail-panel{position:static}
+}
+@media(max-width:900px){
+ .menu-btn{display:block}
+ .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%);transition:transform .2s;padding-top:env(safe-area-inset-top,0px)}
+ .nav-open .sidebar{transform:none}
+ .nav-open .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:25}
+}
+@media(max-width:720px){
+ .topbar{padding:12px 14px;flex-wrap:wrap;gap:10px}
+ .topbar h2{font-size:16px}
+ .un{display:none}
+ .badge-user{padding:4px}
+ .section-select{order:3;flex:1 1 100%;min-width:0}
+ .content{padding:16px 14px 50px}
+ .card{padding:14px}.stat-card{padding:12px}
+ .stat-card .value{font-size:21px}
+ .grid{gap:10px}
+ .approval-grid{grid-template-columns:1fr}
+ .filters select,.filters input{flex:1 1 140px;min-width:0}
+ .filters input{flex-basis:100%}
+ .route-node{width:88px}
+ .ai-card{flex-direction:column;gap:12px}
+ .ai-actions{flex-direction:row;flex-wrap:wrap}
+ .comm-shell{grid-template-columns:1fr;grid-template-rows:200px 460px;height:auto}
+ .worker-list{border-right:none;border-bottom:1px solid var(--line)}
+ .msg{max-width:85%}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">SM</div>
+      <h1>Station Master<br>Dashboard</h1>
+      <p>NGP &mdash; NAGPUR JN &nbsp;|&nbsp; DIV: CR-NGP</p>
+    </div>
+    <nav>
+      <div class="nav-item active" data-view="dashboard"><span class="dot"></span>Dashboard</div>
+      <div class="nav-item" data-view="ai"><span class="dot"></span>AI Suggested Work<span class="nav-count" id="aiCount">0</span></div>
+      <div class="nav-item" data-view="requests"><span class="dot"></span>Current Requests<span class="nav-count" id="rqCount">0</span></div>
+      <div class="nav-item" data-view="approvals"><span class="dot"></span>Approvals</div>
+      <div class="nav-item" data-view="worker"><span class="dot"></span>Worker Status</div>
+      <div class="nav-item" data-view="comm"><span class="dot"></span>Communication</div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="live"><span class="blip"></span> SECTION LIVE &mdash; NORMAL</div>
+      Shift: 06:00&ndash;14:00 &nbsp;|&nbsp; 24 Sep 2026
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu">&#9776;</button>
+      <div class="tb-title"><h2 id="topbarTitle">Dashboard</h2><div class="sub" id="topbarSub"></div></div>
+      <select class="section-select" id="secSel" aria-label="Active section"></select>
+      <div class="badge-user"><span class="av">RK</span><span class="un">R. Kulkarni &middot; SM</span></div>
+    </div>
+
+    <div class="content">
+      <section class="view active" id="view-dashboard">
+        <div class="grid grid-4" id="stats"></div>
+        <div class="grid grid-2" style="margin-top:16px;align-items:start">
+          <div class="card" id="overview"></div>
+          <div class="card" id="prio"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-ai">
+        <div class="filters">
+          <select id="aiPri"><option value="all">All priorities</option><option value="CRITICAL">Critical</option><option value="HIGH">High</option><option value="MEDIUM">Medium</option></select>
+          <select id="aiSec"></select>
+          <input type="search" id="aiQ" placeholder="Search work item, KM or asset...">
+        </div>
+        <div id="aiList"></div>
+      </section>
+
+      <section class="view" id="view-requests">
+        <div class="filters">
+          <select id="rqSt"><option value="all">All statuses</option><option>OPEN</option><option>IN PROGRESS</option><option>SCHEDULED</option><option>CLOSED</option></select>
+          <select id="rqSec"></select>
+          <input type="search" id="rqQ" placeholder="Search request ID, work, KM or worker...">
+        </div>
+        <div class="req-grid">
+          <div class="card tw"><table><thead><tr><th>Req ID</th><th>Work Details</th><th>Section</th><th>Location</th><th>Date</th><th>Start</th><th>End</th><th>Status</th></tr></thead><tbody id="reqBody"></tbody></table></div>
+          <div class="card detail-panel" id="reqDetail"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-approvals">
+        <div class="filters">
+          <select id="apSt"><option value="all">All statuses</option><option value="APPROVED">Approved</option><option value="NOT APPROVED">Not Approved</option><option value="WAITING">Waiting</option></select>
+          <select id="apSec"></select>
+        </div>
+        <div class="card tw"><table><thead><tr><th>Req ID</th><th>Work Details</th><th>Section</th><th>Division Control</th><th>Control Office</th></tr></thead><tbody class="ro" id="apBody"></tbody></table></div>
+      </section>
+
+      <section class="view" id="view-worker">
+        <div class="filters">
+          <select id="wkSt"><option value="all">All statuses</option><option value="ACCEPTED">Accepted</option><option value="NOT ACCEPTED">Not Accepted</option><option value="WAITING">Waiting</option></select>
+          <select id="wkSec"></select>
+        </div>
+        <div class="card tw"><table><thead><tr><th>Req ID</th><th>Assigned Worker</th><th>Work Details</th><th>Section</th><th>Acceptance</th><th>Status</th><th>Reporting Time</th></tr></thead><tbody class="ro" id="wkBody"></tbody></table></div>
+      </section>
+
+      <section class="view" id="view-comm">
+        <div class="comm-shell">
+          <div class="worker-list">
+            <div class="worker-search"><input type="search" id="wQ" placeholder="Search workers..."></div>
+            <div id="wItems"></div>
+          </div>
+          <div class="chat-col">
+            <div class="chat-head"><div><div class="name" id="chatName"></div><div class="role" id="chatRole"></div></div><span id="chatStatus"></span></div>
+            <div class="chat-body" id="chatBody"></div>
+            <div class="chat-input"><input type="text" id="chatInput" placeholder="Type a message to the worker..."><button onclick="sendMsg()" aria-label="Send">&#10148;</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ---------- SAMPLE DATA: replace with your own ---------- */
+const S=[
+['NGP – ITARSI','Nagpur Jn','Itarsi Jn','Ajni (AJNI)','Narkhed (NKD)','18.4','UP Main Line','SEC 4B'],
+['NGP – BPQ','Nagpur Jn','Balharshah Jn','Hinganghat (HGT)','Warora (WRR)','141.7','DN Main Line','SEC 2A'],
+['NGP – WR','Nagpur Jn','Wardha Jn','Ajni (AJNI)','Sindi (SDI)','61.0','UP Line','SEC 1C'],
+['NGP – GONDIA','Nagpur Jn','Gondia Jn','Kamptee (KP)','Bhandara Rd (BRD)','44.3','UP Main Line','SEC 6A'],
+['NGP – AMLA','Nagpur Jn','Amla Jn','Narkhed (NKD)','Multai (MTY)','102.8','DN Main Line','SEC 4C'],
+['NGP – BSL','Nagpur Jn','Bhusawal Jn','Pulgaon (PLO)','Dhamangaon (DMN)','78.2','UP Main Line','SEC 3A'],
+['NGP – BDNR','Nagpur Jn','Badnera Jn','Dhamangaon (DMN)','Chandur Rly (CRLM)','152.4','DN Line','SEC 5B'],
+['NGP – KP','Nagpur Jn','Kamptee','Kalamna (KLMA)','Kamptee (KP)','11.2','Branch Line','SEC 7A'],
+['NGP – CWA','Nagpur Jn','Chhindwara Jn','Sausar (SSR)','Pandhurna (PAN)','77.9','Branch Line (BG)','SEC 8C'],
+['NGP – KATOL','Nagpur Jn','Katol','Kalmeshwar (KLMR)','Katol (KTOL)','56.4','Branch Line','SEC 9A']
+].map(a=>({n:a[0],fj:a[1],tj:a[2],fs:a[3],ts:a[4],km:a[5],ln:a[6],id:a[7]}));
+
+const A=[
+{t:'Rail fracture risk — fishplate joint',p:'CRITICAL',s:0,km:'18.4',as:'Fishplate FP-2291',dt:'23 Sep, 04:12',date:'24 Sep',stm:'06:00',etm:'08:00',d:'Track sensors show rising vibration stress near a fishplate joint on the UP Main Line (91% model confidence, last 72 hrs). Recommend ultrasonic inspection before the next goods rake.'},
+{t:'Point machine lubrication overdue',p:'HIGH',s:0,km:'2.1',as:'Point Machine PM-14',dt:'22 Sep, 19:40',date:'24 Sep',stm:'07:00',etm:'08:30',d:'PM-14 at Ajni yard is 9 days past its lubrication interval, raising the risk of slow point operation in peak hours.'},
+{t:'Signal cable insulation check',p:'MEDIUM',s:0,km:'34.7',as:'Cable Run SC-08',dt:'21 Sep, 11:05',date:'25 Sep',stm:'11:00',etm:'13:00',d:'Minor insulation resistance drop on the signal cable between Narkhed and Kondhali. No immediate risk; add to the next maintenance block.'},
+{t:'Track gauge widening detected',p:'HIGH',s:1,km:'141.2',as:'Track Segment TS-141',dt:'23 Sep, 02:45',date:'24 Sep',stm:'05:00',etm:'07:00',d:'Recording car data shows gauge exceeding tolerance over a 40 m stretch. Recommend gauge check and fastening tightening.'},
+{t:'OHE tension variation',p:'MEDIUM',s:2,km:'60.6',as:'OHE Mast M-612',dt:'22 Sep, 14:20',date:'25 Sep',stm:'14:00',etm:'16:00',d:'Contact wire tension is drifting outside the normal band after the last heat cycle. Schedule an adjustment.'},
+{t:'Bridge bearing distress — Br. 118',p:'CRITICAL',s:3,km:'44.3',as:'Bridge BR-118',dt:'23 Sep, 03:30',date:'24 Sep',stm:'04:00',etm:'06:00',d:'Acoustic sensors indicate abnormal movement at a pier bearing. Recommend urgent inspection and a temporary speed restriction.'},
+{t:'Rail wear beyond limit — curve',p:'HIGH',s:4,km:'102.8',as:'Curve C-07',dt:'22 Sep, 09:10',date:'25 Sep',stm:'09:00',etm:'12:00',d:'Side wear on the outer rail has crossed the permissible limit. Plan rail replacement in the next block.'},
+{t:'Axle counter sensor drift',p:'MEDIUM',s:5,km:'78.2',as:'Axle Counter AC-33',dt:'21 Sep, 16:40',date:'25 Sep',stm:'16:00',etm:'17:30',d:'Count mismatches recorded twice this week. Recommend recalibration during the next S&T block.'},
+{t:'Track circuit intermittent failure',p:'HIGH',s:6,km:'152.4',as:'Track Circuit TC-21',dt:'23 Sep, 01:05',date:'24 Sep',stm:'01:00',etm:'03:00',d:'Repeated false occupancy alarms on TC-21. Likely ballast resistance or a bond fault; needs tracing.'},
+{t:'Level crossing gate wear',p:'MEDIUM',s:7,km:'11.2',as:'LC Gate LC-04',dt:'20 Sep, 12:00',date:'25 Sep',stm:'12:00',etm:'13:30',d:'Gate boom hinge shows wear and slower closing time. Inspect and replace bushes at the next visit.'},
+{t:'Landslip risk — cutting slope',p:'CRITICAL',s:8,km:'77.9',as:'Cutting CT-12',dt:'23 Sep, 05:55',date:'24 Sep',stm:'05:30',etm:'08:00',d:'Rain-soaked cutting slope shows early movement on the slope sensors. Recommend patrolling and slope stabilisation.'},
+{t:'Sleeper condition survey due',p:'MEDIUM',s:9,km:'56.4',as:'Sleeper Block SB-56',dt:'19 Sep, 08:15',date:'26 Sep',stm:'08:00',etm:'10:00',d:'Annual sleeper condition survey is due for this block. Include it in the next planned maintenance schedule.'}
+];
+
+const R=[
+{id:'WR-2291',w:'Ultrasonic rail inspection – fishplate',s:0,km:'18.4',date:'23 Sep',stm:'06:40',etm:'09:00',st:'OPEN',dv:'WAITING',ct:'WAITING',wk:'S. Patil',rl:'Track Gang',ac:'NOT ACCEPTED',rp:'—',online:false},
+{id:'WR-2287',w:'Point machine PM-14 lubrication',s:0,km:'2.1',date:'22 Sep',stm:'20:10',etm:'21:30',st:'IN PROGRESS',dv:'APPROVED',ct:'WAITING',wk:'A. Verma',rl:'Signal & Telecom',ac:'ACCEPTED',rp:'22 Sep, 20:45',online:true},
+{id:'WR-2280',w:'Signal cable insulation check',s:0,km:'34.7',date:'21 Sep',stm:'11:30',etm:'13:00',st:'SCHEDULED',dv:'APPROVED',ct:'APPROVED',wk:'M. Joshi',rl:'Signal & Telecom',ac:'ACCEPTED',rp:'21 Sep, 12:00',online:true},
+{id:'WR-2264',w:'Level crossing gate motor repair',s:0,km:'9.6',date:'20 Sep',stm:'15:05',etm:'17:00',st:'CLOSED',dv:'NOT APPROVED',ct:'NOT APPROVED',wk:'R. Singh',rl:'Electrical Gang',ac:'WAITING',rp:'—',online:false},
+{id:'WR-2251',w:'Ballast top-up – UP line dip',s:0,km:'27.9',date:'19 Sep',stm:'09:20',etm:'11:00',st:'CLOSED',dv:'APPROVED',ct:'APPROVED',wk:'K. Rao',rl:'Track Gang',ac:'ACCEPTED',rp:'19 Sep, 09:50',online:true},
+{id:'WR-2295',w:'Gauge check – widening spot',s:1,km:'141.2',date:'23 Sep',stm:'05:10',etm:'07:00',st:'OPEN',dv:'APPROVED',ct:'WAITING',wk:'P. Deshmukh',rl:'Track Gang',ac:'WAITING',rp:'—',online:false},
+{id:'WR-2296',w:'OHE tension adjustment',s:2,km:'60.6',date:'22 Sep',stm:'15:00',etm:'17:00',st:'SCHEDULED',dv:'APPROVED',ct:'APPROVED',wk:'N. Kale',rl:'OHE Gang',ac:'ACCEPTED',rp:'24 Sep, 08:00',online:true},
+{id:'WR-2297',w:'Bridge bearing inspection – Br. 118',s:3,km:'44.3',date:'23 Sep',stm:'04:00',etm:'06:30',st:'OPEN',dv:'WAITING',ct:'WAITING',wk:'D. Bhoyar',rl:'Bridge Gang',ac:'NOT ACCEPTED',rp:'—',online:false},
+{id:'WR-2298',w:'Curve rail replacement',s:4,km:'102.8',date:'22 Sep',stm:'10:30',etm:'13:00',st:'IN PROGRESS',dv:'APPROVED',ct:'APPROVED',wk:'V. Meshram',rl:'Track Gang',ac:'ACCEPTED',rp:'23 Sep, 07:30',online:true},
+{id:'WR-2299',w:'Axle counter recalibration',s:5,km:'78.2',date:'21 Sep',stm:'17:15',etm:'18:30',st:'SCHEDULED',dv:'APPROVED',ct:'WAITING',wk:'A. Sheikh',rl:'Signal & Telecom',ac:'ACCEPTED',rp:'25 Sep, 09:00',online:true},
+{id:'WR-2300',w:'Track circuit fault trace',s:6,km:'152.4',date:'23 Sep',stm:'01:40',etm:'03:30',st:'OPEN',dv:'NOT APPROVED',ct:'WAITING',wk:'T. Ingle',rl:'Signal & Telecom',ac:'WAITING',rp:'—',online:false},
+{id:'WR-2301',w:'LC gate wear inspection',s:7,km:'11.2',date:'20 Sep',stm:'12:30',etm:'14:00',st:'CLOSED',dv:'APPROVED',ct:'APPROVED',wk:'B. Gupta',rl:'Electrical Gang',ac:'ACCEPTED',rp:'22 Sep, 10:15',online:true},
+{id:'WR-2302',w:'Cutting slope stabilisation',s:8,km:'77.9',date:'23 Sep',stm:'06:10',etm:'08:30',st:'OPEN',dv:'WAITING',ct:'WAITING',wk:'H. Raut',rl:'Civil Gang',ac:'NOT ACCEPTED',rp:'—',online:false},
+{id:'WR-2303',w:'Sleeper condition survey',s:9,km:'56.4',date:'19 Sep',stm:'08:40',etm:'10:30',st:'SCHEDULED',dv:'APPROVED',ct:'APPROVED',wk:'G. Wankhede',rl:'Track Gang',ac:'ACCEPTED',rp:'26 Sep, 08:30',online:true}
+];
+
+const M={
+'WR-2291':[['in','Sir, request received for KM 18.4 inspection. Checking gang availability.','06:52'],['out','Noted. This is flagged critical — please confirm acceptance by 08:00.','06:55'],['in','Understood, will confirm shortly. One member is on another job till 07:30.','06:58']],
+'WR-2287':[['in','Accepted the lubrication job for PM-14. Reporting at 07:00 tomorrow.','20:45'],['out','Confirmed. Tools already staged at Ajni store.','20:47']],
+'WR-2280':[['in','On site at Narkhed, starting cable checks now.','12:00'],['out','Thanks, update me once insulation readings are done.','12:03']],
+'WR-2264':[['out','Please confirm if you can take up the LC gate motor repair at KM 9.6.','15:10']],
+'WR-2251':[['in','Ballast top-up completed and line checked.','10:30'],['out','Good work, closing the request.','10:32']]
+};
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const C={OPEN:'red','NOT ACCEPTED':'red','NOT APPROVED':'red','IN PROGRESS':'yellow',WAITING:'yellow',SCHEDULED:'neutral',RESCHEDULED:'yellow',CLOSED:'green',ACCEPTED:'green',APPROVED:'green',CRITICAL:'red',HIGH:'yellow',MEDIUM:'green'};
+const B=v=>`<span class="badge badge-${C[v]}">${v}</span>`;
+const RK={CRITICAL:0,HIGH:1,MEDIUM:2},IC={CRITICAL:'⚠',HIGH:'🔧',MEDIUM:'🔌'};
+const p2=n=>String(n).padStart(2,'0');
+function nowTime(){const d=new Date();return p2(d.getHours())+':'+p2(d.getMinutes())}
+const kv=(k,v)=>`<div class="kv-row"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+const hit=(arr,q)=>!q||arr.join(' ').toLowerCase().includes(q);
+const emptyRow=n=>`<tr><td colspan="${n}" class="empty">No matching records.</td></tr>`;
+let selId='WR-2291',cw='WR-2291';
+
+const SO='<option value="all">All sections</option>'+S.map((s,i)=>`<option value="${i}">${s.n}</option>`).join('');
+['aiSec','rqSec','apSec','wkSec'].forEach(id=>$(id).innerHTML=SO);
+$('secSel').innerHTML=S.map((s,i)=>`<option value="${i}">Section: ${s.n}</option>`).join('');
+
+/* ---------- navigation ---------- */
+const T={dashboard:['Dashboard'],ai:['AI Suggested Work','MODEL-FLAGGED MAINTENANCE ITEMS'],requests:['Current Requests','ALL OPEN & RECENT WORK REQUESTS'],approvals:['Approvals','DIVISION CONTROL • CONTROL OFFICE'],worker:['Worker Status','ACCEPTANCE & REPORTING'],comm:['Communication','DIRECT MESSAGING WITH FIELD WORKERS']};
+function goTo(k){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===k));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+k));
+  $('topbarTitle').textContent=T[k][0];
+  $('secSel').style.display=k==='dashboard'?'':'none';
+  document.body.classList.remove('nav-open');
+  if(k==='dashboard')renderDash();else $('topbarSub').textContent=T[k][1];
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>goTo(n.dataset.view)));
+$('menuBtn').onclick=()=>document.body.classList.toggle('nav-open');
+$('scrim').onclick=()=>document.body.classList.remove('nav-open');
+
+/* ---------- dashboard (driven by the section dropdown) ---------- */
+function renderDash(){
+  const i=+$('secSel').value,s=S[i],r=R.filter(x=>x.s===i),a=A.filter(x=>x.s===i&&!x.x).sort((x,y)=>RK[x.p]-RK[y.p]);
+  const n=(k,v)=>r.filter(x=>x[k]===v).length;
+  $('topbarSub').textContent='NAGPUR JN • '+s.n;
+  $('stats').innerHTML=[
+    ['red','OPEN REQUESTS',p2(r.filter(x=>x.st!=='CLOSED').length),r.filter(x=>x.dv==='WAITING'||x.ct==='WAITING').length+' awaiting approval'],
+    ['yellow','AI SUGGESTIONS',p2(a.length),a.filter(x=>x.p==='CRITICAL').length+' marked critical'],
+    ['green','WORKERS ACCEPTED',p2(n('ac','ACCEPTED'))+' / '+p2(r.length),(r.length-n('ac','ACCEPTED'))+' pending response'],
+    ['white','DIVISION APPROVED',p2(n('dv','APPROVED'))+' / '+p2(r.length),n('dv','NOT APPROVED')+' not approved']
+  ].map(c=>`<div class="card stat-card"><div class="top-line" style="background:var(--${c[0]})"></div><div class="label">${c[1]}</div><div class="value">${c[2]}</div><div class="delta">${c[3]}</div></div>`).join('');
+  $('overview').innerHTML=`<h3 class="block-title">Active Section &mdash; Junction &amp; Station Overview</h3>
+    <div class="route-line"><div class="route-node origin"><div class="pin"></div><div class="name">${s.fj.toUpperCase()}</div><div class="kind">FROM JUNCTION</div></div><div class="route-track"><span class="marker">${s.id}</span></div><div class="route-node dest"><div class="pin"></div><div class="name">${s.tj.toUpperCase()}</div><div class="kind">TO JUNCTION</div></div></div>
+    ${kv('SECTION',s.n)}${kv('FROM STATION',s.fs)}${kv('TO STATION',s.ts)}${kv('WORK LOCATION','KM '+s.km+' from Nagpur Jn')}${kv('TRACK / LINE',s.ln)}`;
+  const t=a[0];
+  $('prio').innerHTML=`<h3 class="block-title">Today's Priority Item</h3>`+(t?
+    `<div style="font-size:14px;font-weight:600;margin-bottom:6px">${t.t} &mdash; KM ${t.km}</div><p class="desc" style="margin-bottom:14px">${t.d}</p><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">${B(t.p)}<span class="badge badge-neutral">${t.as}</span></div><button class="btn btn-primary" onclick="reviewAI(${i})">Review AI Suggestion</button>`:
+    `<div class="empty">No pending AI suggestions for this section.</div>`);
+}
+function reviewAI(i){$('aiSec').value=i;$('aiPri').value='all';$('aiQ').value='';renderAI();goTo('ai')}
+
+/* ---------- AI suggested work ---------- */
+function aiCardHtml(a){
+  const meta=`<div class="ai-meta"><span>SECTION <b>${S[a.s].n}</b></span><span>KM <b>${a.km}</b></span><span>ASSET <b>${a.as}</b></span><span>DETECTED <b>${a.dt}</b></span></div>`;
+  let actions;
+  if(a.phase==='reason'){
+    actions=`<div class="ai-body" style="flex:1"><div class="ai-head"><strong>${a.t}</strong>${B(a.p)}</div>
+      <textarea class="mini" id="aiReason_${A.indexOf(a)}" rows="3" placeholder="Reason for not approving..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="submitAiReason(${A.indexOf(a)})">Submit Reason</button><button class="btn btn-ghost btn-sm" onclick="cancelAi(${A.indexOf(a)})">Cancel</button></div></div>`;
+    return `<div class="ai-card priority-${a.p.toLowerCase()}"><div class="ai-icon">${IC[a.p]}</div>${actions}</div>`;
+  }
+  if(a.phase==='scheduled'){
+    actions=`<div class="ai-body" style="flex:1"><div class="ai-head"><strong>${a.t}</strong>${B(a.p)}<span class="badge badge-red">NOT APPROVED</span></div>
+      <p class="desc">Reason: ${esc(a.reason)}</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px">
+        <input type="text" class="mini" id="aiDate_${A.indexOf(a)}" value="${a.date}" style="width:90px">
+        <input type="time" class="mini" id="aiStart_${A.indexOf(a)}" value="${a.stm}" style="width:110px">
+        <input type="time" class="mini" id="aiEnd_${A.indexOf(a)}" value="${a.etm}" style="width:110px">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveAiResched(${A.indexOf(a)})">Save Reschedule</button></div>`;
+    return `<div class="ai-card priority-${a.p.toLowerCase()}"><div class="ai-icon">${IC[a.p]}</div>${actions}</div>`;
+  }
+  if(a.phase==='done'){
+    return `<div class="ai-card priority-${a.p.toLowerCase()}"><div class="ai-icon">${IC[a.p]}</div><div class="ai-body"><div class="ai-head"><strong>${a.t}</strong>${B(a.p)}<span class="badge badge-red">NOT APPROVED</span><span class="badge badge-yellow">RESCHEDULED</span></div><p class="desc">Reason: ${esc(a.reason)}</p>${meta}<div class="ai-meta" style="margin-top:6px"><span>NEW DATE <b>${a.date}</b></span><span>NEW TIME <b>${a.stm}&ndash;${a.etm}</b></span></div></div><div class="ai-actions"><button class="btn btn-ghost btn-sm" onclick="editAi(${A.indexOf(a)})">Edit Reschedule</button></div></div>`;
+  }
+  return `<div class="ai-card priority-${a.p.toLowerCase()}"><div class="ai-icon">${IC[a.p]}</div><div class="ai-body"><div class="ai-head"><strong>${a.t}</strong>${B(a.p)}</div><p class="desc">${a.d}</p>${meta}</div><div class="ai-actions"><button class="btn btn-primary btn-sm" onclick="raise(${a.s})">Approve</button></div></div>`;
+}
+function renderAI(){
+  const p=$('aiPri').value,s=$('aiSec').value,q=$('aiQ').value.trim().toLowerCase();
+  const L=A.filter(a=>!a.x&&(p==='all'||a.p===p)&&(s==='all'||a.s===+s)&&hit([a.t,a.d,a.as,'km '+a.km,S[a.s].n,a.p],q));
+  $('aiList').innerHTML=L.length?L.map(aiCardHtml).join(''):'<div class="card empty">No matching assets found. Try a different priority, section or search word.</div>';
+  $('aiCount').textContent=A.filter(a=>!a.x).length;
+}
+function notApproveAi(i){A[i].phase='reason';renderAI()}
+function cancelAi(i){A[i].phase=null;renderAI()}
+function submitAiReason(i){
+  const v=$('aiReason_'+i).value.trim();
+  if(!v){alert('Please enter a reason.');return}
+  A[i].reason=v;A[i].phase='scheduled';renderAI();
+}
+function saveAiResched(i){
+  const d=$('aiDate_'+i).value.trim(),st=$('aiStart_'+i).value,et=$('aiEnd_'+i).value;
+  if(!d||!st||!et){alert('Please fill in the new date, start time and end time.');return}
+  A[i].date=d;A[i].stm=st;A[i].etm=et;A[i].phase='done';renderAI();
+}
+function editAi(i){A[i].phase='scheduled';renderAI()}
+function raise(s){$('rqSec').value=s;$('rqSt').value='all';$('rqQ').value='';renderReq();goTo('requests')}
+
+function statusCell(r){
+  if(r.decision==='APPROVED')return B('APPROVED');
+  if(r.decision==='NOT APPROVED')return B('NOT APPROVED')+(r.resch?' <span class="badge badge-yellow">RESCHEDULED</span>':' <span class="badge badge-neutral">PENDING</span>');
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="event.stopPropagation();approveReq('${r.id}')">Approve</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();notApproveReq('${r.id}')">Not Approved</button></div>`;
+}
+/* ---------- current requests ---------- */
+function renderReq(){
+  const st=$('rqSt').value,s=$('rqSec').value,q=$('rqQ').value.trim().toLowerCase();
+  const L=R.filter(r=>(st==='all'||r.st===st)&&(s==='all'||r.s===+s)&&hit([r.id,r.w,'km '+r.km,r.wk,S[r.s].n],q));
+  if(!L.some(r=>r.id===selId))selId=L.length?L[0].id:null;
+  $('reqBody').innerHTML=L.length?L.map(r=>`<tr class="${r.id===selId?'selected':''}" data-id="${r.id}"><td class="id-cell">${r.id}</td><td>${r.w}</td><td>${S[r.s].n}</td><td class="mono">KM ${r.km}</td><td class="mono">${r.date}</td><td class="mono">${r.stm}</td><td class="mono">${r.etm}</td><td>${statusCell(r)}</td></tr>`).join(''):emptyRow(8);
+  $('rqCount').textContent=R.filter(r=>r.st!=='CLOSED').length;
+  renderDetail();
+}
+function approveReq(id){const r=R.find(x=>x.id===id);r.decision='APPROVED';r.napPhase=null;selId=id;renderReq()}
+function notApproveReq(id){const r=R.find(x=>x.id===id);r.decision='NOT APPROVED';r.napPhase='reason';selId=id;renderReq()}
+function cancelNap(id){const r=R.find(x=>x.id===id);r.napPhase=null;r.decision=null;renderReq()}
+function submitNapReason(id){
+  const v=$('napReasonInput').value.trim();
+  if(!v){alert('Please enter a reason.');return}
+  const r=R.find(x=>x.id===id);r.napReason=v;r.napPhase='scheduled';renderDetail();
+}
+function saveReqResched(id){
+  const d=$('rgDate').value.trim(),st=$('rgStart').value,et=$('rgEnd').value;
+  if(!d||!st||!et){alert('Please fill in the new date, start time and end time.');return}
+  const r=R.find(x=>x.id===id);
+  r.date=d;r.stm=st;r.etm=et;r.resch=true;r.napPhase='done';
+  (M[id]=M[id]||[]).push(['out',`Your request ${id} (${r.w}) was not approved. Reason: ${r.napReason}. New schedule: ${r.date}, ${r.stm}\u2013${r.etm}. Please confirm availability.`,nowTime()]);
+  renderReq();renderComm();
+}
+function editReqResched(id){const r=R.find(x=>x.id===id);r.napPhase='scheduled';renderDetail()}
+function renderDetail(){
+  const r=R.find(x=>x.id===selId),el=$('reqDetail');
+  if(!r){el.innerHTML='<div class="detail-empty"><span class="icn">&#128269;</span>No request to show</div>';return}
+  const s=S[r.s];
+  if(r.napPhase==='reason'){
+    el.innerHTML=`<h3 class="block-title">Not Approved &mdash; ${r.id}</h3>
+      <p class="desc" style="margin-bottom:12px">${r.w} &mdash; write the reason this request is not approved.</p>
+      <textarea class="mini" id="napReasonInput" rows="4" placeholder="Reason for not approving..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" onclick="submitNapReason('${r.id}')">Submit Reason</button>
+        <button class="btn btn-ghost btn-sm" onclick="cancelNap('${r.id}')">Cancel</button>
+      </div>`;
+    return;
+  }
+  if(r.napPhase==='scheduled'){
+    el.innerHTML=`<h3 class="block-title">Reschedule &mdash; ${r.id}</h3>
+      ${kv('REASON',esc(r.napReason))}
+      <div class="kv-row"><span class="k">NEW DATE</span><span class="v"><input type="text" class="mini" id="rgDate" value="${r.date}" style="width:100px"></span></div>
+      <div class="kv-row"><span class="k">NEW START</span><span class="v"><input type="time" class="mini" id="rgStart" value="${r.stm}" style="width:120px"></span></div>
+      <div class="kv-row"><span class="k">NEW END</span><span class="v"><input type="time" class="mini" id="rgEnd" value="${r.etm}" style="width:120px"></span></div>
+      <button class="btn btn-primary btn-sm" style="width:100%;margin-top:14px" onclick="saveReqResched('${r.id}')">Save &amp; Notify Worker</button>`;
+    return;
+  }
+  el.innerHTML=`<h3 class="block-title">Request Detail &mdash; ${r.id}</h3>${kv('WORK',r.w)}${kv('SECTION',s.n)}${kv('FROM JUNCTION',s.fj)}${kv('TO JUNCTION',s.tj)}${kv('FROM STATION',s.fs)}${kv('TO STATION',s.ts)}${kv('WORK LOCATION','KM '+r.km)}${kv('DATE',r.date)}${kv('START TIME',r.stm)}${kv('END TIME',r.etm)}${kv('REQUEST STATUS',B(r.st))}${kv('STATION APPROVAL',r.decision?B(r.decision):'<span class="badge badge-neutral">PENDING</span>')}
+  ${r.napReason?kv('NOT APPROVED REASON',esc(r.napReason)):''}
+  <h3 class="block-title" style="margin-top:20px">Approval Status</h3><div class="approval-grid"><div class="approval-box"><div class="who">Division Control</div>${B(r.dv)}</div><div class="approval-box"><div class="who">Control Office</div>${B(r.ct)}</div></div>
+  <h3 class="block-title" style="margin-top:20px">Worker Acceptance</h3>${kv('ASSIGNED WORKER',esc(r.wk)+' ('+esc(r.rl)+')')}${kv('ACCEPTANCE',B(r.ac))}${kv('REPORTING TIME',r.rp)}
+  <button class="btn btn-sm" style="width:100%;margin-top:16px" onclick="msg('${r.id}')">Message Worker</button>`;
+}
+$('reqBody').addEventListener('click',e=>{
+  const tr=e.target.closest('tr[data-id]');if(!tr)return;
+  selId=tr.dataset.id;renderReq();
+  if(innerWidth<=1100)$('reqDetail').scrollIntoView({behavior:'smooth',block:'start'});
+});
+function msg(id){cw=id;$('wQ').value='';renderComm();goTo('comm')}
+
+/* ---------- approvals & worker status ---------- */
+const WS={OPEN:'Open','IN PROGRESS':'In Processing',SCHEDULED:'Waiting',CLOSED:'Closed'};
+const WSCOL={OPEN:'red','IN PROGRESS':'yellow',SCHEDULED:'neutral',CLOSED:'green'};
+function renderAp(){
+  const st=$('apSt').value,s=$('apSec').value;
+  const L=R.filter(r=>(st==='all'||r.dv===st||r.ct===st)&&(s==='all'||r.s===+s));
+  $('apBody').innerHTML=L.length?L.map(r=>`<tr><td class="id-cell">${r.id}</td><td>${r.w}</td><td>${S[r.s].n}</td><td>${B(r.dv)}</td><td>${B(r.ct)}</td></tr>`).join(''):emptyRow(5);
+}
+function renderWk(){
+  const st=$('wkSt').value,s=$('wkSec').value;
+  const L=R.filter(r=>(st==='all'||r.ac===st)&&(s==='all'||r.s===+s));
+  $('wkBody').innerHTML=L.length?L.map(r=>`<tr><td class="id-cell">${r.id}</td><td>${r.wk} &mdash; ${esc(r.rl)}</td><td>${r.w}</td><td>${S[r.s].n}</td><td>${B(r.ac)}</td><td><span class="badge badge-${WSCOL[r.st]}">${WS[r.st]}</span></td><td class="mono">${r.date}, ${r.stm}&ndash;${r.etm}</td></tr>`).join(''):emptyRow(7);
+}
+
+/* ---------- communication ---------- */
+function renderComm(){
+  const q=$('wQ').value.trim().toLowerCase();
+  const L=R.filter(r=>hit([r.wk,r.rl,r.id],q));
+  $('wItems').innerHTML=L.length?L.map(r=>`<div class="worker-item ${r.id===cw?'active':''}" data-id="${r.id}"><div class="wav">${r.wk.split(/[ .]+/).filter(Boolean).map(x=>x[0]).join('')}<span class="stat-dot" style="background:var(--${r.online?'green':'text-faint'})"></span></div><div><div class="wname">${esc(r.wk)}</div><div class="wrole">${esc(r.rl)} &middot; ${r.id}</div></div></div>`).join(''):'<div class="empty">No workers found.</div>';
+  const r=R.find(x=>x.id===cw);
+  $('chatName').textContent=r.wk;
+  $('chatRole').innerHTML=`${esc(r.rl)} &middot; Request ${r.id}`;
+  $('chatStatus').innerHTML=r.online?'<span class="badge badge-green">ONLINE</span>':'<span class="badge badge-neutral">OFFLINE</span>';
+  const m=M[cw]||[];
+  $('chatBody').innerHTML=m.length?m.map(x=>`<div class="msg ${x[0]}">${esc(x[1])}<div class="t">${x[2]}</div></div>`).join(''):'<div class="empty">No messages yet. Send the first one below.</div>';
+  $('chatBody').scrollTop=1e6;
+}
+$('wItems').addEventListener('click',e=>{const w=e.target.closest('.worker-item');if(w){cw=w.dataset.id;renderComm()}});
+function sendMsg(){
+  const i=$('chatInput'),v=i.value.trim();if(!v)return;
+  (M[cw]=M[cw]||[]).push(['out',v,nowTime()]);
+  i.value='';renderComm();
+}
+$('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg()});
+
+/* ---------- wire up filters ---------- */
+[[['secSel'],renderDash],[['aiPri','aiSec','aiQ'],renderAI],[['rqSt','rqSec','rqQ'],renderReq],[['apSt','apSec'],renderAp],[['wkSt','wkSec'],renderWk],[['wQ'],renderComm]]
+.forEach(([ids,f])=>ids.forEach(i=>$(i).addEventListener('input',f)));
+
+renderDash();renderAI();renderReq();renderAp();renderWk();renderComm();
+</script>
+</body>
+</html>
